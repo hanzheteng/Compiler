@@ -1,6 +1,6 @@
 
 %{
-int line_num = 0, column = 0;
+int line_num = 1, column = 0;
 %}
 %%
 "function"	{printf("FUNCTION\n"); column += yyleng;}
@@ -49,15 +49,16 @@ int line_num = 0, column = 0;
 "["         {printf("L_SQUARE_BRACKET\n"); column += yyleng;}
 "]"         {printf("R_SQUARE_BRACKET\n"); column += yyleng;}
 ":="        {printf("ASSIGN\n"); column += yyleng;}
-"\n"        {++line_num; column = 0;}
-"\t"        {column++;}
-[0-9]+      {printf("NUMBER %s\n", yytext);}
-[a-zA-Z]+   {printf("IDENT %s\n", yytext);}
-[a-zA-Z"_"][a-zA-Z0-9"_"]*[a-zA-Z0-9]    printf("IDENT %s\n", yytext);
-[0-9]+[a-zA-Z"_"0-9]+       {printf("error %s occur at line %d, colunm %d\n", yytext, line_num, column);}
-[a-zA-Z"_"][a-zA-Z0-9"_"]*["_"]+    {printf("error %s at line %d, column %d\n", yytext, line_num, column);}
-(" "|"\n"|"\t")+       {};
-("#")(.*)("\n")    {};
+"\n"        {line_num++; column = 0;}
+"\t"        {column += yyleng;}
+(" ")+      {column += yyleng;}
+["#"]{2}(.*)("\n")    {line_num++;}
+[0-9]+      {printf("NUMBER %s\n", yytext); column += yyleng;}
+[a-zA-Z]+   {printf("IDENT %s\n", yytext); column += yyleng;}
+[a-zA-Z][a-zA-Z0-9"_"]*[a-zA-Z0-9]    {printf("IDENT %s\n", yytext); column += yyleng;}
+[0-9"_"]+[a-zA-Z0-9"_"]+       {printf("Error at line %d, column %d: Identifier \"%s\" must begin with a letter\n", line_num, column, yytext); exit(0);}
+[a-zA-Z][a-zA-Z0-9"_"]*["_"]+    {printf("Error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", line_num, column, yytext); exit(0);}
+. 	    {printf("Error at line %d, column %d: unrecognized symbol \"%s\"\n", line_num, column, yytext); exit(0);}
 %%
 int main(int argc, char ** argv)
 {
