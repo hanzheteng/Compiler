@@ -1,0 +1,86 @@
+Grammar Rules for BISON Parser Generator
+  -- done by Hanzhe Teng and Zhenxiao Qi
+  -- May 10, 2018
+  -- We use UPPER_CASE to represent terminals and lower_case to represent non-terminals.
+
+input        -->  program
+
+program      -->  functions
+
+functions    -->  /* empty */ 
+functions    -->  function
+functions    -->  function functions
+
+function     -->  FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
+
+declarations -->  /* empty */ 
+declarations -->  declaration SEMICOLON
+declarations -->  declaration SEMICOLON declarations
+
+statements   -->  statement SEMICOLON
+statements   -->  statement SEMICOLON statements
+
+declaration  -->  identifiers COLON INTEGER
+declaration  -->  identifiers COLON ARRAY L_BRACKET NUMBER R_BRACKET OF INTEGER
+
+### question
+identifiers  -->  IDENT
+identifiers  -->  IDENT COMMA identifiers
+
+statement    -->  variable ASSIGN expression
+statement    -->  IF bool_expr THEN statements ENDIF
+statement    -->  IF bool_expr THEN statements ELSE statements ENDIF 
+statement    -->  WHILE bool_expr BEGINLOOP statements ENDLOOP
+statement    -->  DO BEGINLOOP statements ENDLOOP WHILE bool_expr
+statement    -->  READ variables
+statement    -->  WRITE variables
+statement    -->  CONTINUE
+statement    -->  RETURN experssion
+
+bool_expr    -->  relation_and_expr
+bool_expr    -->  relation_and_expr OR relation_and_expr
+
+relation_and_expr --> relation_expr
+relation_and_expr --> relation_expr AND relation_expr
+
+relation_expr -->  NOT relation_expr
+relation_expr -->  expression comparison experssion
+relation_expr -->  TRUE 
+relation_expr -->  FALSE 
+relation_expr -->  L_PAREN bool_expr R_PAREN
+
+comparison   -->  EQ
+comparison   -->  NEQ
+comparison   -->  LTE
+comparison   -->  GTE
+comparison   -->  LT
+comparison   -->  GT
+
+expression   -->  multiplicative_expr
+expression   -->  multiplicative_expr ADD multiplicative_expr 
+expression   -->  multiplicative_expr SUB multiplicative_expr 
+
+multiplicative_expr -->  term
+multiplicative_expr -->  term MULT term
+multiplicative_expr -->  term DIV term
+multiplicative_expr -->  term MOD term
+
+term         -->  variable
+term         -->  SUB variable
+term         -->  NUMBER
+term         -->  SUB NUMBER
+term         -->  L_PAREN expression R_PAREN
+term         -->  SUB L_PAREN expression R_PAREN
+term         -->  IDENT L_PAREN expressions R_PAREN
+
+expressions  -->  /* empty */
+expressions  -->  expression
+expressions  -->  expression COMMA expressions
+
+variables    -->  variable
+variables    -->  variable COMMA variables
+
+variable     -->  IDENT
+variable     -->  IDENT L_BRACKET expression R_BRACKET
+
+
