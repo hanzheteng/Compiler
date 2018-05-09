@@ -8,13 +8,13 @@ input        -->  program
 program      -->  functions
 
 functions    -->  /* empty */ 
-functions    -->  function
+functions    -->  function  //useless
 functions    -->  function functions
 
 function     -->  FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
 
 declarations -->  /* empty */ 
-declarations -->  declaration SEMICOLON
+declarations -->  declaration SEMICOLON  //useless
 declarations -->  declaration SEMICOLON declarations
 
 statements   -->  statement SEMICOLON
@@ -35,7 +35,7 @@ statement    -->  DO BEGINLOOP statements ENDLOOP WHILE bool_expr
 statement    -->  READ variables
 statement    -->  WRITE variables
 statement    -->  CONTINUE
-statement    -->  RETURN experssion
+statement    -->  RETURN expression
 
 bool_expr    -->  relation_and_expr
 bool_expr    -->  relation_and_expr OR relation_and_expr
@@ -75,7 +75,7 @@ term         -->  IDENT L_PAREN expressions R_PAREN
 
 expressions  -->  /* empty */
 expressions  -->  expression
-expressions  -->  expression COMMA expressions
+expressions  -->  expression COMMA expression
 
 variables    -->  variable
 variables    -->  variable COMMA variables
