@@ -4,7 +4,7 @@
 
 %{
 #include "heading.h"
-int yyerror(char *s);
+void yyerror(char *s);
 int yylex(void);
 %}
 
@@ -15,15 +15,14 @@ int yylex(void);
 
 %start	input 
 
-%token  <int_val>  NUMBER
-%token  <op_val>   IDENT
+%token  <int_val> NUMBER
+%token  <op_val> IDENT
 %token  FUNCTION SEMICOLON BEGIN_LOCALS BEGIN_PARAMS END_PARAMS END_LOCALS BEGIN_BODY END_BODY
 %token  INTEGER ARRAY OF IF THEN ENDIF ELSE WHILE DO BEGINLOOP ENDLOOP CONTINUE READ WRITE
 %token  L_BRACKET R_BRACKET 
 %token  TRUE FALSE RETURN COLON COMMA  
 %token  L_PAREN R_PAREN L_SQUARE_BRACKET R_SQUARE_BRACKET ASSIGN 
 %left   AND OR NOT SUB ADD MULT DIV MOD EQ NEQ LT GT LTE GTE
-
 %%
 
 input:		program{
@@ -39,7 +38,7 @@ program:	functions{
 functions:      /* empty */{
                 printf("functions->empty\n");
                 }
-                /*| function{
+                /*function{
                   printf("functions->function");
                   }*/
                 | function functions{
@@ -243,8 +242,7 @@ variable:       IDENT{
                   }
                 ;
 %%
-
-int yyerror(string s)
+void yyerror(string s)
 {
   extern int yylineno;	// defined and maintained in lex.c
   extern char *yytext;	// defined and maintained in lex.c
@@ -252,12 +250,11 @@ int yyerror(string s)
   //exit(1);
 }
 
-int yyerror(char *s)
+void yyerror(char *s)
 {
    yyerror(string(s));
 }
 
-int yyparse();
 
 int main(int argc, char **argv)
 {
