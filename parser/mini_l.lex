@@ -53,9 +53,9 @@ int line_num = 1, column = 0;
 "\t"        {column += yyleng;}
 (" ")+      {column += yyleng;}
 ["#"]{2}(.*)("\n")    {line_num++;}
-[0-9]+      {column += yyleng;return NUMBER;}
-[a-zA-Z]+   {column += yyleng;return IDENT;}
-[a-zA-Z][a-zA-Z0-9"_"]*[a-zA-Z0-9]    {column += yyleng; return IDENT;}
+[0-9]+      {column += yyleng;yylval.int_val = atoi(yytext); return NUMBER;}
+[a-zA-Z]+   {column += yyleng;yylval.op_val = yytext; ;return IDENT;}
+[a-zA-Z][a-zA-Z0-9"_"]*[a-zA-Z0-9]    {column += yyleng; yylval.op_val = yytext; return IDENT;}
 [0-9"_"]+[a-zA-Z0-9"_"]+       {printf("Error at line %d, column %d: Identifier \"%s\" must begin with a letter\n", line_num, column, yytext); exit(0);}
 [a-zA-Z][a-zA-Z0-9"_"]*["_"]+    {printf("Error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", line_num, column, yytext); exit(0);}
 . 	    {printf("Error at line %d, column %d: unrecognized symbol \"%s\"\n", line_num, column, yytext); exit(0);}

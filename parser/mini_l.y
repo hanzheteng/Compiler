@@ -46,8 +46,8 @@ functions:      /* empty */{
                   }
                 ;
 
-function:	FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY{
-                printf("function->FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY\n");
+function:	FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY{
+                printf("function->FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY\n");
                 }
                 ;
 
@@ -73,19 +73,23 @@ statements:     statement SEMICOLON{
 declaration:    identifiers COLON INTEGER{
                 printf("declaration->identifiers COLON INTEGER\n");
                 }
-                | identifiers COLON ARRAY L_BRACKET NUMBER R_BRACKET OF INTEGER{
-                  printf("declaration->identifiers COLON ARRAY L_BRACKET NUMBER R_BRACKET OF INTEGER\n");
+                | identifiers COLON ARRAY L_BRACKET number R_BRACKET OF INTEGER{
+                  printf("declaration->identifiers COLON ARRAY L_BRACKET number R_BRACKET OF INTEGER\n");
                   }
                 ;
 
-identifiers:    IDENT{
-                printf("identifiers->IDENT\n");
+identifiers:    identifier{
+                printf("identifiers->identifier\n");
                 }
-                | IDENT COMMA identifiers{
-                  printf("identifiers->IDENT COMMA identifiers\n");
+                | identifier COMMA identifiers{
+                  printf("identifiers->identifier COMMA identifiers\n");
                   }
                 ;
-
+identifier:     IDENT{
+                printf("identifier->IDENT %s\n", yylval.op_val);
+                }
+                ;
+ 
 expression:       multiplicative_expr{
                   printf("expression->multiplicative_expr\n");
                   }
@@ -200,11 +204,11 @@ term:           variable{
                 | SUB variable{
                   printf("term->SUB variable\n");
                   }
-                | NUMBER{
-                  printf("term->NUMBER\n");
+                | number{
+                  printf("term->number\n");
                   }
-                | SUB NUMBER{
-                  printf("term->SUB NUMBER\n");
+                | SUB number{
+                  printf("term->SUB number\n");
                   }
                 | L_PAREN expression R_PAREN{
                   printf("term->L_PAREN expression R_PAREN\n");
@@ -212,10 +216,14 @@ term:           variable{
                 | SUB L_PAREN expression R_PAREN{
                   printf("term->SUB L_PAREN expression R_PAREN\n");
                   }
-                | IDENT L_PAREN expressions R_PAREN{
-                  printf("term->IDENT L_PAREN expressions R_PAREN\n");
+                | identifier L_PAREN expressions R_PAREN{
+                  printf("term->identifier L_PAREN expressions R_PAREN\n");
                   }
                 ;
+
+number:         NUMBER{
+                printf("number->NUMBER %d\n", yylval.int_val);
+                }
 
 expressions:     /* empty */
                 | expression{
@@ -234,11 +242,11 @@ variables:      variable{
                   }
                 ; 
 
-variable:       IDENT{
-                printf("variable->IDENT\n");
+variable:       identifier{
+                printf("variable->identifier\n");
                 }
-                | IDENT L_BRACKET expression R_BRACKET{
-                  printf("variable->IDENT L_BRACKET expression R_BRACKET\n");
+                | identifier L_BRACKET expression R_BRACKET{
+                  printf("variable->identifier L_BRACKET expression R_BRACKET\n");
                   }
                 ;
 %%
