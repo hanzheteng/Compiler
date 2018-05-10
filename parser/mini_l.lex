@@ -60,8 +60,8 @@ int line_num = 1, column = 0;
 [a-zA-Z][a-zA-Z0-9"_"]*["_"]+    {printf("Error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", line_num, column, yytext); exit(0);}
 . 	    {printf("Error at line %d, column %d: unrecognized symbol \"%s\"\n", line_num, column, yytext); exit(0);}
 %%
-int main(int argc, char ** argv)
+/*int main(int argc, char ** argv)
 {
     yylex();
 
-}
+}*/
