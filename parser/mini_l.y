@@ -9,8 +9,8 @@ int yylex(void);
 %}
 
 %union{
-  int		int_val;
-  string*	op_val;
+  int       int_val;
+  char *   op_val;
 }
 
 %start	input 
@@ -23,17 +23,17 @@ int yylex(void);
 %token  TRUE FALSE RETURN COLON COMMA  
 %token  L_PAREN R_PAREN L_SQUARE_BRACKET R_SQUARE_BRACKET ASSIGN 
 %left   AND OR NOT SUB ADD MULT DIV MOD EQ NEQ LT GT LTE GTE
-%%
 
+%%
 input:		program{
                 printf("input->program\n");
                 }
-		        ;
+	        ;
 
 program:	functions{
                 printf("program->functions\n");
                 }
-		        ;
+	        ;
 
 functions:      /* empty */{
                 printf("functions->empty\n");
@@ -242,19 +242,13 @@ variable:       IDENT{
                   }
                 ;
 %%
-void yyerror(string s)
-{
-  extern int yylineno;	// defined and maintained in lex.c
-  extern char *yytext;	// defined and maintained in lex.c
-
-  //exit(1);
-}
 
 void yyerror(char *s)
 {
-   yyerror(string(s));
+  extern int yylineno;	// defined and maintained in lex.c
+  extern char *yytext;	// defined and maintained in lex.c
+  //exit(1);
 }
-
 
 int main(int argc, char **argv)
 {
