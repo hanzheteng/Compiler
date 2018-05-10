@@ -4,7 +4,7 @@
 
 %{
 #include "heading.h"
-void yyerror(char *s);
+void yyerror(const char *);
 int yylex(void);
 %}
 
@@ -13,13 +13,13 @@ int yylex(void);
   char *   op_val;
 }
 
+%error-verbose
 %start	input 
 
 %token  <int_val> NUMBER
 %token  <op_val> IDENT
 %token  FUNCTION SEMICOLON BEGIN_LOCALS BEGIN_PARAMS END_PARAMS END_LOCALS BEGIN_BODY END_BODY
 %token  INTEGER ARRAY OF IF THEN ENDIF ELSE WHILE DO BEGINLOOP ENDLOOP CONTINUE READ WRITE
-%token  L_BRACKET R_BRACKET 
 %token  TRUE FALSE RETURN COLON COMMA  
 %token  L_PAREN R_PAREN L_SQUARE_BRACKET R_SQUARE_BRACKET ASSIGN 
 %left   AND OR NOT SUB ADD MULT DIV MOD EQ NEQ LT GT LTE GTE
@@ -49,6 +49,7 @@ functions:      /* empty */{
 function:	FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY{
                 printf("function->FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY\n");
                 }
+                | error {yyerrok;yyclearin;}
                 ;
 
 declarations:   /* empty */ {
@@ -73,9 +74,10 @@ statements:     statement SEMICOLON{
 declaration:    identifiers COLON INTEGER{
                 printf("declaration->identifiers COLON INTEGER\n");
                 }
-                | identifiers COLON ARRAY L_BRACKET number R_BRACKET OF INTEGER{
-                  printf("declaration->identifiers COLON ARRAY L_BRACKET number R_BRACKET OF INTEGER\n");
+                | identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER{
+                  printf("declaration->identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER\n");
                   }
+                | error {yyerrok;yyclearin;}
                 ;
 
 identifiers:    identifier{
@@ -93,11 +95,11 @@ identifier:     IDENT{
 expression:       multiplicative_expr{
                   printf("expression->multiplicative_expr\n");
                   }
-                 | multiplicative_expr ADD multiplicative_expr{
-                   printf("expression->multiplicative_expr ADD multiplicative_expr\n");
+                 | multiplicative_expr ADD expression{
+                   printf("expression->multiplicative_expr ADD expression\n");
                    } 
-                 | multiplicative_expr SUB multiplicative_expr{
-                   printf("expression->multiplicative_expr SUB multiplicative_expr\n");
+                 | multiplicative_expr SUB expression{
+                   printf("expression->multiplicative_expr SUB expression\n");
                    } 
                  ;
 statement:      variable ASSIGN expression{
@@ -127,21 +129,22 @@ statement:      variable ASSIGN expression{
                 | RETURN expression{
                   printf("statement->RETURN expression\n");
                   }
+                | error {yyerrok;yyclearin;}
                 ;
 
 bool_expr:      relation_and_expr{
                 printf("bool_expr->relation_and_expr\n");
                 }
-                | relation_and_expr OR relation_and_expr{
-                  printf("bool_expr->relation_and_expr OR relation_and_expr\n");
+                | relation_and_expr OR bool_expr{
+                  printf("bool_expr->relation_and_expr OR bool_expr\n");
                   }
                 ;
 
 relation_and_expr:  relation_expr{
                     printf("relation_and_expr->relation_expr\n");
                     }
-                    | relation_expr AND relation_expr{
-                      printf("relation_and_expr->relation_expr AND relation_expr\n");
+                    | relation_expr AND relation_and_expr{
+                      printf("relation_and_expr->relation_expr AND relation_and_expr\n");
                       }
                     ;
 
@@ -187,14 +190,14 @@ comparison:      EQ{
 multiplicative_expr:  term{
                       printf("multiplicative_expr->term\n");
                       }
-                      | term MULT term{
-                        printf("multiplicative_expr->term MULT term\n");
+                      | term MULT multiplicative_expr{
+                        printf("multiplicative_expr->term MULT multiplicative_expr\n");
                         }
-                      | term DIV term{
-                        printf("multiplicative_expr->term DIV term\n");
+                      | term DIV multiplicative_expr{
+                        printf("multiplicative_expr->term DIV multiplicative_expr\n");
                         }
-                      | term MOD term{
-                        printf("multiplicative_expr->term MOD term\n");
+                      | term MOD multiplicative_expr{
+                        printf("multiplicative_expr->term MOD multiplicative_expr\n");
                         }
                       ;
 
@@ -245,16 +248,17 @@ variables:      variable{
 variable:       identifier{
                 printf("variable->identifier\n");
                 }
-                | identifier L_BRACKET expression R_BRACKET{
-                  printf("variable->identifier L_BRACKET expression R_BRACKET\n");
+                | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET{
+                  printf("variable->identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET\n");
                   }
                 ;
 %%
 
-void yyerror(char *s)
+void yyerror(const char * msg)
 {
-  extern int yylineno;	// defined and maintained in lex.c
-  extern char *yytext;	// defined and maintained in lex.c
+  extern int line_num;
+  extern int column;
+  printf("** Line %d, position %d: %s\n", line_num, column, msg);
   //exit(1);
 }
 

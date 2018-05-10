@@ -21,7 +21,7 @@ statements   -->  statement SEMICOLON
 statements   -->  statement SEMICOLON statements
 
 declaration  -->  identifiers COLON INTEGER
-declaration  -->  identifiers COLON ARRAY L_BRACKET NUMBER R_BRACKET OF INTEGER
+declaration  -->  identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
 
 ### question
 identifiers  -->  IDENT
@@ -38,10 +38,10 @@ statement    -->  CONTINUE
 statement    -->  RETURN expression
 
 bool_expr    -->  relation_and_expr
-bool_expr    -->  relation_and_expr OR relation_and_expr
+bool_expr    -->  relation_and_expr OR bool_expr
 
 relation_and_expr --> relation_expr
-relation_and_expr --> relation_expr AND relation_expr
+relation_and_expr --> relation_expr AND relation_and_expr
 
 relation_expr -->  NOT relation_expr
 relation_expr -->  expression comparison expression
@@ -57,13 +57,13 @@ comparison   -->  LT
 comparison   -->  GT
 
 expression   -->  multiplicative_expr
-expression   -->  multiplicative_expr ADD multiplicative_expr 
-expression   -->  multiplicative_expr SUB multiplicative_expr 
+expression   -->  multiplicative_expr ADD expression 
+expression   -->  multiplicative_expr SUB expression 
 
 multiplicative_expr -->  term
-multiplicative_expr -->  term MULT term
-multiplicative_expr -->  term DIV term
-multiplicative_expr -->  term MOD term
+multiplicative_expr -->  term MULT multiplicative_expr
+multiplicative_expr -->  term DIV multiplicative_expr
+multiplicative_expr -->  term MOD multiplicative_expr
 
 term         -->  variable
 term         -->  SUB variable
@@ -81,6 +81,6 @@ variables    -->  variable
 variables    -->  variable COMMA variables
 
 variable     -->  IDENT
-variable     -->  IDENT L_BRACKET expression R_BRACKET
+variable     -->  IDENT L_SQUARE_BRACKET expression R_SQUARE_BRACKET
 
 
