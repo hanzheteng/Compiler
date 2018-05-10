@@ -44,7 +44,7 @@ relation_and_expr --> relation_expr
 relation_and_expr --> relation_expr AND relation_expr
 
 relation_expr -->  NOT relation_expr
-relation_expr -->  expression comparison experssion
+relation_expr -->  expression comparison expression
 relation_expr -->  TRUE 
 relation_expr -->  FALSE 
 relation_expr -->  L_PAREN bool_expr R_PAREN
@@ -75,7 +75,7 @@ term         -->  IDENT L_PAREN expressions R_PAREN
 
 expressions  -->  /* empty */
 expressions  -->  expression
-expressions  -->  expression COMMA expression
+expressions  -->  expression COMMA expressions
 
 variables    -->  variable
 variables    -->  variable COMMA variables
