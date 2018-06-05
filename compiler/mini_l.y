@@ -73,7 +73,7 @@ functions:      /* empty */{
 
 function:	FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY{
                 func_code = $5.code;
-                func_name = $2.code;
+                func_name = $2.id;
                 printf("#######################3 %d\n",$$);
                 }
                 | error {yyerrok;yyclearin;}
@@ -105,10 +105,13 @@ declaration:    identifiers COLON INTEGER{
                 $$.code = new stringstream();
                 $$.type = INT;
                 $$.length = 0;
+                *($$.code) <<// if string *($$.code) else if stringstream $$.code
+                gen(".",) <<
+                gen("=", );//continue
                 printf("declaration->identifiers COLON INTEGER\n");
                 }
                 | identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER{
-                  if($3 <= 0)
+                  if($5 <= 0)
                     yyerror("array size <= 0");
                   for(int i = 0; i < $1.id->size(); i++){
                     symbol symb;
@@ -135,11 +138,18 @@ identifiers:    identifier{
 identifier:     IDENT{
                 $$.id = new vector<string>();
                 $$.id->push_back(string($1));
+                $$.code = new stringstream();
+                $$.temp = new_temp();
+                *($$.code) <<
+                gen(".", $$.temp) <<
+                gen("=", $$.temp, string($1));
                 printf("identifier->IDENT %s\n", yylval.op_val);
                 }
                 ;
  
 expression:       multiplicative_expr{
+                  $$.code = $1.code;
+                  $$.temp = $1.temp;
                   printf("expression->multiplicative_expr\n");
                   }
                  | multiplicative_expr ADD expression{
@@ -168,7 +178,7 @@ statement:      variable ASSIGN expression{
                   $$.iexit = new_label();
                   $$.ifalse = new_label();
                   $$.code = $2.code;
-                  $$.code << 
+                  *($$.code) << 
                   gen("?:=", $$.ifalse, $2.temp) <<//continue!!!!!!!! 
                   $4.code->str() << 
                   gen(":=", $$.iexit);
@@ -202,6 +212,7 @@ statement:      variable ASSIGN expression{
                 ;
 
 bool_expr:      relation_and_expr{
+                $$.code = $1.code;
                 printf("bool_expr->relation_and_expr\n");
                 }
                 | relation_and_expr OR bool_expr{
@@ -210,6 +221,7 @@ bool_expr:      relation_and_expr{
                 ;
 
 relation_and_expr:  relation_expr{
+                    $$.code = $1.code;
                     printf("relation_and_expr->relation_expr\n");
                     }
                     | relation_expr AND relation_and_expr{
@@ -235,7 +247,7 @@ relation_expr:    NOT relation_expr{
                    temp tmp = new_temp();
                    *($$.code) << 
                    $3.code->str() <<
-                   gen(*($2), tmp, );//continue
+                   gen(*($2), tmp, $1.temp, $3.temp);//continue
                    $$.temp = tmp; 
                    printf("relation_expr->expression comparison expression\n");
                    }
@@ -300,6 +312,8 @@ multiplicative_expr:  term{
                       ;
 
 term:           variable{
+                $$.code = $1.code;
+                $$.temp = $1.temp;
                 printf("term->variable\n");
                 }
                 | SUB variable{
@@ -345,7 +359,8 @@ variables:      variable{
                 ; 
 
 variable:       identifier{
-                
+                $$.code = $1.code;
+                $$.temp = $1.temp; 
                 printf("variable->identifier\n");
                 }
                 | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET{

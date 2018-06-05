@@ -12,3 +12,11 @@ using namespace std;
 typedef string * temp;
 typedef sytrng * label;
 
+enum symb_type {INT, ARRAY};
+
+struct symbol{
+  int value;
+  int size;
+  symb_type type;
+
+};
