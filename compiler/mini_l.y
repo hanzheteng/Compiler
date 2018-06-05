@@ -33,8 +33,6 @@
 
 }
 
-
-
 %error-verbose
 %start	input 
 
@@ -107,7 +105,7 @@ declaration:    identifiers COLON INTEGER{
                 $$.length = 0;
                 *($$.code) <<// if string *($$.code) else if stringstream $$.code
                 gen(".",) <<
-                gen("=", );//continue
+                gen("=", );//continue no temp here
                 printf("declaration->identifiers COLON INTEGER\n");
                 }
                 | identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER{
@@ -138,11 +136,6 @@ identifiers:    identifier{
 identifier:     IDENT{
                 $$.id = new vector<string>();
                 $$.id->push_back(string($1));
-                $$.code = new stringstream();
-                $$.temp = new_temp();
-                *($$.code) <<
-                gen(".", $$.temp) <<
-                gen("=", $$.temp, string($1));
                 printf("identifier->IDENT %s\n", yylval.op_val);
                 }
                 ;
@@ -185,6 +178,10 @@ statement:      variable ASSIGN expression{
                   printf("statement->IF bool_expr THEN statements ENDIF\n");
                   }
                 | IF bool_expr THEN statements ELSE statements ENDIF{
+                  *($$.code) = $2.code <<
+                  gen("?:=", $$.ifalse, $2.temp) <<
+                  $4.code <<
+                  $6.code;
                   //continue!!!!!!!!
                   printf("statement->IF bool_expr THEN statements ELSE statements ENDIF\n");
                   } 
@@ -246,6 +243,7 @@ relation_expr:    NOT relation_expr{
                    $$.code = $1.code;
                    temp tmp = new_temp();
                    *($$.code) << 
+                   $1.code->str() <<
                    $3.code->str() <<
                    gen(*($2), tmp, $1.temp, $3.temp);//continue
                    $$.temp = tmp; 
@@ -359,8 +357,11 @@ variables:      variable{
                 ; 
 
 variable:       identifier{
-                $$.code = $1.code;
-                $$.temp = $1.temp; 
+                $$.code = new stringstream();
+                $$.temp = new_temp();//generate temo here
+                *($$.code) <<
+                gen(".", $$.temp) <<
+                gen("=", $$.temp, string($1));
                 printf("variable->identifier\n");
                 }
                 | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET{
