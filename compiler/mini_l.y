@@ -44,7 +44,7 @@
 %type <state> variables variable term expression expressions
 %type <state> bool_expr multiplicative_expr relation_and_expr relation_expr
 %type <op_val> comparison
-%type <int_val> number
+%type <state> number
 
 %%
 input:		program{
@@ -94,7 +94,7 @@ declaration:    identifiers COLON INTEGER{      //done this one
                 }
                 | identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER{
                   int cnt = 0;
-                  while($1.id_num--) {$$.code += gen(".[]", $1.ids[cnt++], number);}  //while
+                  while($1.id_num--) {$$.code += gen(".[]", $1.ids[cnt++], $5.temp);}  //while
                   if(comment_on) printf("declaration->identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER\n");
                   }
                 | error {yyerrok;yyclearin;}
@@ -111,7 +111,7 @@ statements:     statement SEMICOLON{     //done this one
                 ;
 
 
-statement:      variable ASSIGN expression{
+statement:      variable ASSIGN expression{    // do not consider array at first
                 $$.code = $1.code;
                 if(comment_on) printf("statement->variable ASSIGN expression\n");
                 }
@@ -236,8 +236,8 @@ comparison:      EQ{  //done this one
                    if(comment_on) printf("comparison->GT\n");
                    }
                  ;
-
-expressions:      /* empty */ {
+/*
+expressions:      / empty / {    // need to use the same way of dealing with ids[]
                   $$.code = "";
                   if(comment_on) printf("expressions->empty\n");
                   }
@@ -248,78 +248,85 @@ expressions:      /* empty */ {
                   if(comment_on) printf("expressions->expression COMMA expressions\n");
                   }
                 ;
+*/
 
-expression:        multiplicative_expr{
-                   $$.code = $1.code;
+expression:        multiplicative_expr{   // done this one
                    $$.temp = $1.temp;
+                   $$.code = $1.code;
                    if(comment_on) printf("expression->multiplicative_expr\n");
                    }
                  | multiplicative_expr ADD expression{
-                   //写到这 最后的return加起来的code expression里已经生成了上面部分的代码
                    $$.temp = new_temp();
-                   $$.code = $1.code;
-                   $$.code +=
-                   $3.code +
-                   gen(".", $$.temp) +
-                   gen("+", $$.temp, $1.temp, $3.temp);//order matters????
+                   $$.code = $1.code + $3.code + gen("+", $$.temp, $1.temp, $3.temp);
                    if(comment_on) printf("expression->multiplicative_expr ADD expression\n");
                    } 
                  | multiplicative_expr SUB expression{
+                   $$.temp = new_temp();
+                   $$.code = $1.code + $3.code + gen("-", $$.temp, $1.temp, $3.temp);
                    if(comment_on) printf("expression->multiplicative_expr SUB expression\n");
                    } 
                  ;
 
-multiplicative_expr:  term{
-                      $$.code = $1.code;
+multiplicative_expr:  term{   // done this one
                       $$.temp = $1.temp;
+                      $$.code = $1.code;
                       if(comment_on) printf("multiplicative_expr->term\n");
                       }
                       | term MULT multiplicative_expr{
-                        
+                        $$.temp = new_temp();
+                        $$.code = $1.code + $3.code + gen("*", $$.temp, $1.temp, $3.temp);
                         if(comment_on) printf("multiplicative_expr->term MULT multiplicative_expr\n");
                         }
                       | term DIV multiplicative_expr{
+                        $$.temp = new_temp();
+                        $$.code = $1.code + $3.code + gen("/", $$.temp, $1.temp, $3.temp);
                         if(comment_on) printf("multiplicative_expr->term DIV multiplicative_expr\n");
                         }
                       | term MOD multiplicative_expr{
+                        $$.temp = new_temp();
+                        $$.code = $1.code + $3.code + gen("%", $$.temp, $1.temp, $3.temp);
                         if(comment_on) printf("multiplicative_expr->term MOD multiplicative_expr\n");
                         }
                       ;
 
-term:           variable{
-                $$.code = $1.code;
+term:           variable{    // done this one
                 $$.temp = $1.temp;
+                $$.code = $1.code;
                 if(comment_on) printf("term->variable\n");
                 }
                 | SUB variable{
+                  $$.temp = $1.temp;
+                  $$.code = $1.code + gen("*", $$.temp, $$.temp, to_string(-1));
                   if(comment_on) printf("term->SUB variable\n");
                   }
                 | number{
+                  $$.temp = $1.temp;
                   $$.code = $1.code;
-                  $$.temp = $1.temp;//do we need to track the temp??
                   if(comment_on) printf("term->number\n");
                   }
                 | SUB number{
+                  $$.temp = $1.temp;
+                  $$.code = $1.code + gen("*", $$.temp, $$.temp, to_string(-1));
                   if(comment_on) printf("term->SUB number\n");
                   }
                 | L_PAREN expression R_PAREN{
+                  $$.temp = $1.temp;
+                  $$.code = $1.code;
                   if(comment_on) printf("term->L_PAREN expression R_PAREN\n");
           	  }
                 | SUB L_PAREN expression R_PAREN{
+                  $$.temp = $1.temp;
+                  $$.code = $1.code + gen("*", $$.temp, $$.temp, to_string(-1));
                   if(comment_on) printf("term->SUB L_PAREN expression R_PAREN\n");
                   }
-                | identifier L_PAREN expressions R_PAREN{
-                  $$.temp = new_temp();//this is to store the return value
-                  $$.code = $3.code;
-                  $$.code += 
-                  gen("param", $3.temp) +
-                  gen(".", $$.temp) +
-                  gen("call", $1.id, $$.temp); 
+                | identifier L_PAREN expression R_PAREN{       // temporary make exprs to expr
+                  $$.temp = new_temp();  // for return value
+                  $$.code = gen("param", $3.temp) + gen(".", $$.temp) + gen("call", $1.id, $$.temp);
                   if(comment_on) printf("term->identifier L_PAREN expressions R_PAREN\n");
                   }
                 ;
 
-variables:      variable{
+variables:      variable{   
                 $$.code = $1.code;
                 $$.id = $1.id;
                 if(comment_on) printf("variables->variable\n");
@@ -327,9 +334,9 @@ variables:      variable{
                 | variable COMMA variables{
                   if(comment_on) printf("variables->variable COMMA variables\n");
                   }
-                ; 
+                ;
 
-variable:       identifier{
+variable:       identifier{  
                 $$.id = $1.id;
                 $$.temp = new_temp();//generate temo here
                 $$.code =
@@ -337,7 +344,7 @@ variable:       identifier{
                 gen("=", $$.temp, string($1));
                 if(comment_on) printf("variable->identifier\n");
                 }
-                | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET{
+                | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET{    // array case
                   if(comment_on) printf("variable->identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET\n");
                   }
                 ;
@@ -357,17 +364,14 @@ identifiers:    identifier{   //done this one
                 ;
 
 identifier:     IDENT{   //done this one
-                $$.id = yylval.op_val;
+                $$.id = string(yylval.op_val);
                 if(comment_on) printf("identifier->IDENT %s\n", yylval.op_val);
                 }
                 ;
 
-number:         NUMBER{    // need to pay attention
-                $$ = yylval.int_val;
-                /*$$.temp = new_temp();
-                $$.code +=
-                gen(".", $$.temp) +
-                gen("=", $$.temp, $1);*/
+number:         NUMBER{    //done this one
+                $$.temp = new_temp();
+                $$.code = gen("=", $$.temp, to_string(yylval.int_val));
                 if(comment_on) printf("number->NUMBER %d\n", yylval.int_val);
                 }
                 ;
