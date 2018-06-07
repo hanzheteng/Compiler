@@ -1,4 +1,3 @@
-/* calculator. */
 %{
   #include "heading.h"
   int yylex(void);
