@@ -13,17 +13,17 @@
   int    int_val;
   char*  op_val;
   struct{
-    stringstream *code;
+    string code;
     //identifiers
-    vector<string> *id;
+    vector<string> id;
     //temp variable
     label temp;
     //condition
     label ifalse;
     label iexit;
     //others 
-    uint length;
-    symbol_type type;
+    //uint length;
+    //symbol_type type;
   }state;
 
 }
@@ -40,7 +40,7 @@
 %left   AND OR NOT SUB ADD MULT DIV MOD EQ NEQ LT GT LTE GTE
 
 
-%type <state> identifiers idnetifier functions function 
+%type <state> identifiers identifier functions function 
 %type <state> declarations declaration statement statements
 %type <state> variables variable term expression expressions
 %type <state> bool_expr multiplicative_expr relation_and_expr relation_expr
@@ -63,34 +63,33 @@ functions:      /* empty */{
                 printf("functions->empty\n");
                 }
                 | function functions{
-                  $$.code = $2.code;
-                  *($$.code) <<
-                  "\n" <<
-                  $1.code->str();
+                  $$.code = $1.code +
+                  "\n" +
+                  $2.code;
                   printf("functions->function functions\n");
                   }
                 ;
 
 function:	FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY{
-                $$.code = new stringstream();//add endfunc here???
                 $$.id = $2.id;
-                *($$.code) <<
-                gen("func", $2.id) <<
-                $5.code->str() <<
-                gen("=", $5.id, "$0") <<
-                $8.code->str() <<
-                $11.code->str();
+                $$.code =
+                gen("func", $2.id) +
+                $5.code +
+                gen("=", $5.id, "$0") +
+                $8.code +
+                $11.code +
+                "endfunc";
                 }
                 | error {yyerrok;yyclearin;}
                 ;
 
 declarations:   /* empty */ {
+                $$.code = "";
                 //what to do here?
                 printf("declarations->empty\n");
                 }
                 | declaration SEMICOLON declarations{
-                  $$.code = $3.code;
-                  *($$.code) << $1.code->str();
+                  $$.code = $1.code + $3.code;
                   printf("declarations->declaration SEMICOLON declarations\n");
                   }
                 ;
@@ -100,30 +99,28 @@ statements:     statement SEMICOLON{
                 printf("statements->statement SEMICOLON\n");
                 }
                 | statement SEMICOLON statements{
-                  $$.code = $3.code->str();
-                  *($$.code) << $1.code->str();
+                  $$.code = $1.code + $3.code;
                   printf("statements->statement SEMICOLON statements\n");
                   }
                 ;
 
 declaration:    identifiers COLON INTEGER{
-                $$.code = new stringstream();
-                $$.type = INT;
-                $$.length = 0;
-                *($$.code) <<// if string *($$.code) else if stringstream $$.code
+                //$$.type = INT;
+                //$$.length = 0;
+                $$.code = // if string *($$.code) else if stringstream $$.code
                 gen(".", $1.id);
                 $$.id = $1.id;
                 printf("declaration->identifiers COLON INTEGER\n");
                 }
                 | identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER{
-                  if($5 <= 0)
+                  /*if($5 <= 0)
                     yyerror("array size <= 0");
                   for(int i = 0; i < $1.id->size(); i++){
                     symbol symb;
-                    symb.type = ARRAY;
+                    //symb.type = ARRAY;
                     symb.size = $5;
                     push_to_symbol_table();//continue
-                  }
+                  }*/
                   printf("declaration->identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER\n");
                   }
                 | error {yyerrok;yyclearin;}
@@ -135,8 +132,8 @@ identifiers:    identifier{
                 printf("identifiers->identifier\n");
                 }
                 | identifier COMMA identifiers{
-                  $$.id = $3.id;
-                  $$.id->push_back(string($1));
+                  $$.id = $1.id;
+                  $$.id->push_back(string($3));
                   printf("identifiers->identifier COMMA identifiers\n");
                   }
                 ;
@@ -156,9 +153,9 @@ expression:       multiplicative_expr{
                    //写到这 最后的return加起来的code expression里已经生成了上面部分的代码
                    $$.temp = new_temp();
                    $$.code = $1.code;
-                   *($$.code) <<
-                   $3.code->str() <<
-                   gen(".", $$.temp)<<
+                   $$.code +=
+                   $3.code +
+                   gen(".", $$.temp) +
                    gen("+", $$.temp, $1.temp, $3.temp);//order matters????
                    printf("expression->multiplicative_expr ADD expression\n");
                    } 
@@ -168,39 +165,38 @@ expression:       multiplicative_expr{
                  ;
 statement:      variable ASSIGN expression{
                 $$.code = $1.code;
-                if($1.type == ARRAY){
+                /*if($1.type == ARRAY){
                   *($$.code) << 
                   $3.code->str() << 
                   gen();//array intermediate code
-                }
-                else{
-                  *($$.code) << 
-                  $3.code->str() <<
-                  gen();//
+                }*/
+                //else{
+                  $$.code += $3.code + gen();//continue
 
-                }
+                //}
                 printf("statement->variable ASSIGN expression\n");
                 }
                 | IF bool_expr THEN statements ENDIF{
                   $$.itrue = new_label();//label 0
                   $$.ifalse = new_label();//label 1
                   $$.code = $2.code;
-                  *($$.code) << 
-                  gen("?:=", $$.itrue, $2.temp) <<//continue!!!!!!!! 
-                  gen(":=", $$.ifalse) <<
-                  $4.code->str();
+                  $$.code +=
+                  gen("?:=", $$.itrue, $2.temp) +//continue!!!!!!!! 
+                  gen(":=", $$.ifalse) +
+                  gen(":", $$.itrue) +
+                  $4.code +
+                  gen(":", $$.ifalse);
                   printf("statement->IF bool_expr THEN statements ENDIF\n");
                   }
                 | IF bool_expr THEN statements ELSE statements ENDIF{
-                  *($$.code) = $2.code <<
-                  gen("?:=", $$.ifalse, $2.temp) <<
-                  $4.code <<
+                  $$.code = $2.code +
+                  gen("?:=", $$.ifalse, $2.temp) +
+                  $4.code +
                   $6.code;
-                  //continue!!!!!!!!
+                  //not uesful yet
                   printf("statement->IF bool_expr THEN statements ELSE statements ENDIF\n");
                   } 
                 | WHILE bool_expr BEGINLOOP statements ENDLOOP{
-                  $$.code = new stringstream();
                   
                   printf("statement->WHILE bool_expr BEGINLOOP statements ENDLOOP\n");
                   }
@@ -208,21 +204,18 @@ statement:      variable ASSIGN expression{
                   printf("statement->DO BEGINLOOP statements ENDLOOP WHILE bool_expr\n");
                   }
                 | READ variables{
-                  $$.code = new stringstream();
-                  *($$.code) <<
-                  gen(".<", $2.id);
+                  $$.code = gen(".<", $2.id);
                   printf("statement->READ variables\n");
                   }
                 | WRITE variables{
-                   $$.code = new stringstream();
-                   *($$.code) <<
-                   gen(".>", $2.id); 
+                   $$.code = gen(".>", $2.id); 
                   printf("statement->WRITE variables\n");
                   }
                 | CONTINUE{
                   printf("statement->CONTINUE\n");
                   }
                 | RETURN expression{
+                  $$.code = gen("ret", $2.temp);
                   printf("statement->RETURN expression\n");
                   }
                 | error {yyerrok;yyclearin;}
@@ -245,9 +238,9 @@ relation_and_expr:  relation_expr{
                       $$.code = $3.code;
                       temp tmp = new_temp();
                       $$.temp = tmp;
-                      *($$.code) <<
-                      $1.code->str() <<
-                      gen("&&", temp, )//continue
+                      $$.code +=
+                      $1.code;//not useful yet! so comment
+                      //gen("&&", temp, )//continue
                       printf("relation_and_expr->relation_expr AND relation_and_expr\n");
                       }
                     ;
@@ -255,27 +248,25 @@ relation_and_expr:  relation_expr{
 relation_expr:    NOT relation_expr{
                   $$.code = $2.code;
                   $$.temp = $2.temp;
-                  *($$.code) <<
-                  gen("!",$$.temp,)//continue
+                  //$$.code += //not uesful yet!!
+                  //gen("!",$$.temp,)//continue
                   printf("relation_expr->NOT relation_expr\n");
                   }
                  | expression comparison expression{
                    $$.code = $1.code;
                    temp tmp = new_temp();
-                   *($$.code) << 
-                   $1.code->str() <<
-                   $3.code->str() <<
+                   $$.code +=
+                   $1.code +
+                   $3.code +
                    gen(*($2), tmp, $1.temp, $3.temp);//continue
                    $$.temp = tmp; 
                    printf("relation_expr->expression comparison expression\n");
                    }
                  | TRUE{
-                   $$.code = new stringstream();
                    $$.code = "true";
                    printf("relation_expr->TRUE\n");
                    }
                  | FALSE{
-                   $$.code = new stringstream();
                    $$.code = "false";
                    printf("relation_expr->FALSE\n");
                    }
@@ -354,19 +345,18 @@ term:           variable{
                 | identifier L_PAREN expressions R_PAREN{
                   $$.temp = new_temp();//this is to store the return value
                   $$.code = $3.code;
-                  *($$.code) << 
-                  gen("param", $3.temp) <<
-                  gen(".", %%.temp) <<
+                  $$.code += 
+                  gen("param", $3.temp) +
+                  gen(".", $$.temp) +
                   gen("call", $1.id, $$.temp); 
                   printf("term->identifier L_PAREN expressions R_PAREN\n");
                   }
                 ;
 
 number:         NUMBER{
-                $$.code = new stringstream();
                 $$.temp = new_temp();
-                *($$.code) <<
-                gen(".", $$.temp) <<
+                $$.code +=
+                gen(".", $$.temp) +
                 gen("=", $$.temp, $1);
                 printf("number->NUMBER %d\n", yylval.int_val);
                 }
@@ -391,11 +381,10 @@ variables:      variable{
                 ; 
 
 variable:       identifier{
-                $$.code = new stringstream();
                 $$.id = $1.id;
                 $$.temp = new_temp();//generate temo here
-                *($$.code) <<
-                gen(".", $$.temp) <<
+                $$.code =
+                gen(".", $$.temp) +
                 gen("=", $$.temp, string($1));
                 printf("variable->identifier\n");
                 }
