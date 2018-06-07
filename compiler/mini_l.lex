@@ -1,6 +1,6 @@
 %{
+#include "heading.h"
 #include "y.tab.h"
-#include <string>
 int line_num = 1, column = 0;
 %}
 %%

@@ -4,7 +4,6 @@
 
 %{
   #include "heading.h"
-  #include <string>
   void yyerror(const char *);
   int yylex(void);
   string *program_code;
@@ -42,9 +41,9 @@
 
 %type <state> identifiers identifier functions function 
 %type <state> declarations declaration statement statements
-%type <state> variables variable term expression expressions
+%type <state> variables variable term expression
 %type <state> bool_expr multiplicative_expr relation_and_expr relation_expr
-%type <op_val> comparison
+%type <state> comparison
 %type <state> number
 
 %%
@@ -195,7 +194,7 @@ relation_expr:    NOT relation_expr{    //done this one
                   }
                  | expression comparison expression{
                    *$$.temp = new_temp();
-                   *$$.code = *$1.code + *$3.code + gen($2, $$.temp, $1.temp, $3.temp);
+                   *$$.code = *$1.code + *$3.code + gen(*$2.code, $$.temp, $1.temp, $3.temp);
                    if(comment_on) printf("relation_expr->expression comparison expression\n");
                    }
                  | TRUE{
@@ -216,27 +215,27 @@ relation_expr:    NOT relation_expr{    //done this one
                  ;
 
 comparison:      EQ{  //done this one
-                 $$ = "==";
+                 *$$.code = "==";
                  if(comment_on) printf("comparison->EQ\n");
                  }
                  | NEQ{
-                   $$ = "!=";
+                   *$$.code = "!=";
                    if(comment_on) printf("comparison->NEQ\n");
                    }
                  | LTE{
-                   $$ = "<=";
+                   *$$.code = "<=";
                    if(comment_on) printf("comparison->LTE\n");
                    }
                  | GTE{
-                   $$ = ">=";
+                   *$$.code = ">=";
                    if(comment_on) printf("comparison->GTE\n");
                    }
                  | LT{
-                   $$ = "<";
+                   *$$.code = "<";
                    if(comment_on) printf("comparison->LT\n");
                    }
                  | GT{
-                   $$ = ">";
+                   *$$.code = ">";
                    if(comment_on) printf("comparison->GT\n");
                    }
                  ;
@@ -371,16 +370,14 @@ identifiers:    identifier{   //done this one
                 ;
 
 identifier:     IDENT{   //done this one
-                *$$.id = to_string(yylval.op_val);//not correct
+                *$$.id = string($1);//not correct
                 if(comment_on) printf("identifier->IDENT %s\n", yylval.op_val);
                 }
                 ;
 
 number:         NUMBER{    //done this one
                 *$$.temp = new_temp();
-                int a = $1;
-                char *intstr = itoa(a);
-                *$$.code = gen("=", $$.temp, string(intstr));
+                *$$.code = gen("=", $$.temp, to_string($1));
                 if(comment_on) printf("number->NUMBER %d\n", yylval.int_val);
                 }
                 ;

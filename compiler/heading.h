@@ -3,18 +3,11 @@
 #define HEADING_H
 
 #include <iostream>
-#include <vector>
-#include <stack>
 #include <fstream>
-#include <stdio.h>
 #include <string>
-#include <sstream>
-#include <stdlib.h>
-#include <string.h>
-
 using namespace std;
-typedef string  temp;
-typedef string  label;
+//typedef string  temp;
+//typedef string  label;
 
 enum symb_type {INT, INT_ARRAY};
 

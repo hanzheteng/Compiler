@@ -4,7 +4,7 @@ OBJS = mini_parser
 CC = g++
 
 compiler: lexer y.tab.c lex.yy.c
-	$(CC) -o compiler y.tab.c lex.yy.c -lfl
+	$(CC) -std=c++0x -o compiler y.tab.c lex.yy.c -lfl
 
 lexer: bison_file mini_l.lex y.tab.h 
 	flex mini_l.lex
