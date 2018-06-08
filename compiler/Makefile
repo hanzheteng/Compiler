@@ -13,4 +13,4 @@ bison_file: mini_l.y
 	bison -v -d --file-prefix=y mini_l.y
 
 clean:
-	rm -rf *.c *.o *.output *.tab.h mini_parser *.stat parser
+	rm -rf *.c *.o *.output *.tab.h mini_parser *.stat parser *.mil

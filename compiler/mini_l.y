@@ -121,6 +121,7 @@ statements:     statement SEMICOLON{     //done this one
 
 statement:      variable ASSIGN expression{    // do not consider array at first
                 $$.code = $1.code;
+                *$$.code += *$3.code + *gen("=", $1.id, $3.temp);
                 if(comment_on) printf("statement->variable ASSIGN expression\n");
                 }
                 | IF bool_expr THEN statements ENDIF{
@@ -150,19 +151,22 @@ statement:      variable ASSIGN expression{    // do not consider array at first
                 | DO BEGINLOOP statements ENDLOOP WHILE bool_expr{
                   if(comment_on) printf("statement->DO BEGINLOOP statements ENDLOOP WHILE bool_expr\n");
                   }
-                | READ variables{
+                | READ variable{  //variables
                   $$.code = gen(".<", $2.id);
+                  *$$.code += *$2.code;
                   if(comment_on) printf("statement->READ variables\n");
                   }
-                | WRITE variables{
-                   $$.code = gen(".>", $2.id); 
+                | WRITE variable{
+                  $$.code = gen(".>", $2.id);
+                  *$$.code += *$2.code; 
                   if(comment_on) printf("statement->WRITE variables\n");
                   }
                 | CONTINUE{
                   if(comment_on) printf("statement->CONTINUE\n");
                   }
                 | RETURN expression{
-                  $$.code = gen("ret", $2.temp);
+                  $$.code = $2.code;
+                  *$$.code += *gen("ret", $2.temp);
                   if(comment_on) printf("statement->RETURN expression\n");
                   }
                 | error {yyerrok;yyclearin;}
@@ -176,7 +180,7 @@ bool_expr:      relation_and_expr{    //done this one
                 | relation_and_expr OR bool_expr{
                   $$.temp = new_temp();
                   $$.code = $1.code;
-                  *$$.code += *$3.code + *gen("||", $$.temp, $1.temp, $3.temp);
+                  *$$.code += *$3.code + *gen(".", $$.temp) + *gen("||", $$.temp, $1.temp, $3.temp);
                   if(comment_on) printf("bool_expr->relation_and_expr OR bool_expr\n");
                   }
                 ;
@@ -189,7 +193,7 @@ relation_and_expr:  relation_expr{   //done this one
                     | relation_expr AND relation_and_expr{
                       $$.temp = new_temp();
                       $$.code = $1.code;
-                      *$$.code += *$3.code + *gen("&&", $$.temp, $1.temp, $3.temp);
+                      *$$.code += *$3.code + *gen(".", $$.temp) + *gen("&&", $$.temp, $1.temp, $3.temp);
                       if(comment_on) printf("relation_and_expr->relation_expr AND relation_and_expr\n");
                       }
                     ;
@@ -203,17 +207,19 @@ relation_expr:    NOT relation_expr{    //done this one
                  | expression comparison expression{
                    $$.temp = new_temp();
                    $$.code = $1.code;
-                   *$$.code += *$3.code + *gen(*$2.code, $$.temp, $1.temp, $3.temp);
+                   *$$.code += *$3.code + *gen(".", $$.temp) + *gen(*$2.code, $$.temp, $1.temp, $3.temp);
                    if(comment_on) printf("relation_expr->expression comparison expression\n");
                    }
                  | TRUE{
                    $$.temp = new_temp();
-                   $$.code = gen("=", $$.temp, "1");
+                   $$.code = gen(".", $$.temp);
+                   *$$.code += *gen("=", $$.temp, "1");
                    if(comment_on) printf("relation_expr->TRUE\n");
                    }
                  | FALSE{
                    $$.temp = new_temp();
-                   $$.code = gen("=", $$.temp, "0");
+                   $$.code = gen(".", $$.temp);
+                   *$$.code += *gen("=", $$.temp, "0");
                    if(comment_on) printf("relation_expr->FALSE\n");
                    }
                  | L_PAREN bool_expr R_PAREN{
@@ -270,13 +276,13 @@ expression:        multiplicative_expr{   // done this one
                  | multiplicative_expr ADD expression{
                    $$.temp = new_temp();
                    $$.code = $1.code;
-                   *$$.code += *$3.code + *gen("+", $$.temp, $1.temp, $3.temp);
+                   *$$.code += *$3.code + *gen(".", $$.temp) + *gen("+", $$.temp, $1.temp, $3.temp);
                    if(comment_on) printf("expression->multiplicative_expr ADD expression\n");
                    } 
                  | multiplicative_expr SUB expression{
                    $$.temp = new_temp();
                    $$.code = $1.code;
-                   *$$.code += *$3.code + *gen("-", $$.temp, $1.temp, $3.temp);
+                   *$$.code += *$3.code + *gen(".", $$.temp) + *gen("-", $$.temp, $1.temp, $3.temp);
                    if(comment_on) printf("expression->multiplicative_expr SUB expression\n");
                    } 
                  ;
@@ -289,19 +295,19 @@ multiplicative_expr:  term{   // done this one
                       | term MULT multiplicative_expr{
                         $$.temp = new_temp();
                         $$.code = $1.code;
-                        *$$.code += *$3.code + *gen("*", $$.temp, $1.temp, $3.temp);
+                        *$$.code += *$3.code + *gen(".", $$.temp) + *gen("*", $$.temp, $1.temp, $3.temp);
                         if(comment_on) printf("multiplicative_expr->term MULT multiplicative_expr\n");
                         }
                       | term DIV multiplicative_expr{
                         $$.temp = new_temp();
                         $$.code = $1.code;
-                        *$$.code += *$3.code + *gen("/", $$.temp, $1.temp, $3.temp);
+                        *$$.code += *$3.code + *gen(".", $$.temp) + *gen("/", $$.temp, $1.temp, $3.temp);
                         if(comment_on) printf("multiplicative_expr->term DIV multiplicative_expr\n");
                         }
                       | term MOD multiplicative_expr{
                         $$.temp = new_temp();
                         $$.code = $1.code;
-                        *$$.code += *$3.code + *gen("%", $$.temp, $1.temp, $3.temp);
+                        *$$.code += *$3.code + *gen(".", $$.temp) + *gen("%", $$.temp, $1.temp, $3.temp);
                         if(comment_on) printf("multiplicative_expr->term MOD multiplicative_expr\n");
                         }
                       ;
@@ -342,7 +348,8 @@ term:           variable{    // done this one
                 | identifier L_PAREN expression R_PAREN{       // temporary make exprs to expr
                   $$.temp = new_temp();  // for return value
                   $$.code = new string();
-                  *$$.code += *gen("param", $3.temp) + 
+                  *$$.code += *$3.code +
+                              *gen("param", $3.temp) + 
                               *gen(".", $$.temp) + 
                               *gen("call", $1.id, $$.temp);
                   if(comment_on) printf("term->identifier L_PAREN expressions R_PAREN\n");
@@ -359,7 +366,7 @@ variables:      variable{
                   }
                 ;
 
-variable:       identifier{  
+variable:       identifier{
                 $$.id = $1.id;
                 $$.temp = new_temp();//generate temp here
                 $$.code = new string();
@@ -395,7 +402,8 @@ identifier:     IDENT{   //done this one
 
 number:         NUMBER{    //done this one
                 $$.temp = new_temp();
-                $$.code = gen("=", $$.temp, to_string($1));
+                $$.code = gen(".", $$.temp);
+                *$$.code += *gen("=", $$.temp, to_string($1));
                 if(comment_on) printf("number->NUMBER %d\n", yylval.int_val);
                 }
                 ;
