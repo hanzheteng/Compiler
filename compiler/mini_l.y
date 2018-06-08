@@ -27,6 +27,7 @@
     symb_type type;
     string *index;
     int in_loop;
+    int num_val;
   }state;
 
 }
@@ -104,7 +105,7 @@ declaration:    identifiers COLON INTEGER{      //done this one
                 | identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER{
                   int cnt = 0;
                   $$.code = new string();
-                  while($1.id_num--) {*$$.code += *gen(".[]", $1.ids[cnt++], $5.temp);}  //while
+                  while($1.id_num--) {*$$.code += *gen(".[]", $1.ids[cnt++], to_string($5.num_val));}  //while
 
                   if(comment_on) printf("declaration->identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER\n");
                   }
@@ -125,7 +126,10 @@ statements:     statement SEMICOLON{     //done this one
 
 statement:      variable ASSIGN expression{    // do not consider array at first
                 $$.code = $1.code;
-                *$$.code += *$3.code + *gen("=", $1.id, $3.temp);
+                if($1.type == INT)
+                  *$$.code += *$3.code + *gen("=", $1.id, $3.temp);
+                else
+                  *$$.code += *$3.code + *gen("[]=", $1.id, $1.index, $3.temp);
                 if(comment_on) printf("statement->variable ASSIGN expression\n");
                 }
 
@@ -210,7 +214,7 @@ statement:      variable ASSIGN expression{    // do not consider array at first
 
                 | CONTINUE{
                   if(loop_stack.size() < 1)
-                    yyerror("##### Cannot use CONTINUE statement outside a loop.")
+                    yyerror("##### Cannot use CONTINUE statement outside a loop.");
                   $$.code = gen(":=", loop_stack.top());
                   if(comment_on) printf("statement->CONTINUE\n");
                   }
@@ -438,8 +442,8 @@ variable:       identifier{
                   $$.id = $1.id;
                   $$.temp = new_temp();
                   $$.index = $3.temp;
-                  $$.code = new string();
-                  *$$.code += *gen(".[]", $$.temp);
+                  $$.code = $3.code;
+                  *$$.code += *gen(".", $$.temp) + *gen("=[]", $$.temp, $1.id, $3.temp);
                   if(comment_on) printf("variable->identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET\n");
                   }
                 ;
@@ -450,11 +454,11 @@ identifiers:    identifier{   //done this one
                 if(comment_on) printf("identifiers->identifier\n");
                 }
                 | identifier COMMA identifiers{
-                 /* $$.ids[0] = $1.id;
+                  $$.ids[0] = $1.id;
                   $$.id_num = 1;
                   int cnt = 0;
                   while($3.id_num--) {$$.ids[$$.id_num++] = $3.ids[cnt++];} //copy remaining ids
-                  */
+                  
                   if(comment_on) printf("identifiers->identifier COMMA identifiers\n");
                   }
                 ;
@@ -467,6 +471,7 @@ identifier:     IDENT{   //done this one
 
 number:         NUMBER{    //done this one
                 $$.temp = new_temp();
+                $$.num_val = $1;
                 $$.code = gen(".", $$.temp);
                 *$$.code += *gen("=", $$.temp, to_string($1));
                 if(comment_on) printf("number->NUMBER %d\n", yylval.int_val);
