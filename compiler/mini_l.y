@@ -8,6 +8,7 @@
   int yylex(void);
   string *program_code;
   int comment_on = 1;
+  stack<string *> loop_stack;
 %}
 
 %union{
@@ -21,7 +22,11 @@
     string *temp;     // temp variable
     string *label_true;
     string *label_false;
+    string *label_start;
+    string *label_end;
     symb_type type;
+    string *index;
+    int in_loop;
   }state;
 
 }
@@ -42,7 +47,7 @@
 %type <state> declarations declaration statement statements
 %type <state> variables variable term expression
 %type <state> bool_expr multiplicative_expr relation_and_expr relation_expr
-%type <state> comparison
+%type <state> comparison begin_loop
 %type <state> number
 
 %%
@@ -123,6 +128,7 @@ statement:      variable ASSIGN expression{    // do not consider array at first
                 *$$.code += *$3.code + *gen("=", $1.id, $3.temp);
                 if(comment_on) printf("statement->variable ASSIGN expression\n");
                 }
+
                 | IF bool_expr THEN statements ENDIF{
                   $$.label_true = new_label();
                   $$.label_false = new_label();
@@ -135,40 +141,94 @@ statement:      variable ASSIGN expression{    // do not consider array at first
                   *gen(":", $$.label_false);
                   if(comment_on) printf("statement->IF bool_expr THEN statements ENDIF\n");
                   }
+
                 | IF bool_expr THEN statements ELSE statements ENDIF{
-                  /*$$.code = $2.code +
-                  gen("?:=", $$.label_false, $2.temp) +
+                  $$.label_true = new_label();
+                  $$.label_false = new_label();
+                  $$.label_end = new_label();
+                  $$.code = $2.code;
+                  *$$.code +=
+                  *gen("?:=", $$.label_true, $2.temp) +
+                  *gen(":=", $$.label_false) +
+                  *gen(":", $$.label_true) +
                   *$4.code +
-                  *$6.code;
-                  //not uesful yet*/
+                  *gen(":=", $$.label_end) +
+                  *gen(":", $$.label_false) + 
+                  *$6.code + 
+                  *gen(":", $$.label_end);
                   if(comment_on) printf("statement->IF bool_expr THEN statements ELSE statements ENDIF\n");
-                  } 
-                | WHILE bool_expr BEGINLOOP statements ENDLOOP{
-                  
-                  if(comment_on) printf("statement->WHILE bool_expr BEGINLOOP statements ENDLOOP\n");
                   }
-                | DO BEGINLOOP statements ENDLOOP WHILE bool_expr{
-                  if(comment_on) printf("statement->DO BEGINLOOP statements ENDLOOP WHILE bool_expr\n");
+
+                | WHILE bool_expr begin_loop statements ENDLOOP{
+                  $$.label_start = $3.label_start;
+                  $$.label_true = new_label();
+                  $$.label_false = new_label();
+                  $$.code = gen(":", $$.label_start);
+                  *$$.code += 
+                  *$2.code + 
+                  *gen("?:=", $$.label_true, $2.temp) +
+                  *gen(":=", $$.label_false) +
+                  *gen(":", $$.label_true) +
+                  *$4.code +
+                  *gen(":=", $$.label_start) +
+                  *gen(":", $$.label_false);
+                  loop_stack.pop();
+                  if(comment_on) printf("statement->WHILE bool_expr begin_loop statements ENDLOOP\n");
                   }
+
+                | DO begin_loop statements ENDLOOP WHILE bool_expr{
+                  $$.label_start = $2.label_start;
+                  $$.label_true = new_label();
+                  $$.label_false = new_label();
+                  $$.code = gen(":", $$.label_true);
+                  *$$.code += 
+                  *$3.code +
+                  *gen(":", $$.label_start) +
+                  *$6.code +
+                  *gen("?:=", $$.label_true, $6.temp);
+                  loop_stack.pop();
+                  if(comment_on) printf("statement->DO begin_loop statements ENDLOOP WHILE bool_expr\n");
+                  }
+
                 | READ variable{  //variables
-                  $$.code = gen(".<", $2.id);
+                  if($2.type == INT)
+                    $$.code = gen(".<", $2.id);
+                  else
+                    $$.code = gen(".[]<", $2.id, $2.index);
                   *$$.code += *$2.code;
                   if(comment_on) printf("statement->READ variables\n");
                   }
+
                 | WRITE variable{
-                  $$.code = gen(".>", $2.id);
-                  *$$.code += *$2.code; 
+                  if($2.type == INT)
+                    $$.code = gen(".>", $2.id);
+                  else
+                    $$.code = gen(".[]>", $2.id, $2.index);
+                  *$$.code += *$2.code;
                   if(comment_on) printf("statement->WRITE variables\n");
                   }
+
                 | CONTINUE{
+                  if(loop_stack.size() < 1)
+                    yyerror("##### Cannot use CONTINUE statement outside a loop.")
+                  $$.code = gen(":=", loop_stack.top());
                   if(comment_on) printf("statement->CONTINUE\n");
                   }
+
                 | RETURN expression{
                   $$.code = $2.code;
                   *$$.code += *gen("ret", $2.temp);
                   if(comment_on) printf("statement->RETURN expression\n");
                   }
+
                 | error {yyerrok;yyclearin;}
+                ;
+
+begin_loop:     BEGINLOOP{
+                $$.label_start = new_label();
+                loop_stack.push($$.label_start);
+                if(comment_on) printf("begin_loop->BEGINLOOP\n");
+                }
                 ;
 
 bool_expr:      relation_and_expr{    //done this one
@@ -377,6 +437,7 @@ variable:       identifier{
                   $$.type = INT_ARRAY;
                   $$.id = $1.id;
                   $$.temp = new_temp();
+                  $$.index = $3.temp;
                   $$.code = new string();
                   *$$.code += *gen(".[]", $$.temp);
                   if(comment_on) printf("variable->identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET\n");

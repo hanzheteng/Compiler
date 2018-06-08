@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <stack>
+
 using namespace std;
 //typedef string  temp;
 //typedef string  label;
@@ -15,7 +17,6 @@ struct symbol{
   int value;
   int size;
   symb_type type;
-
 };
 
 string* gen(string operation1, string *operation2);
