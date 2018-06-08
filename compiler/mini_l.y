@@ -105,6 +105,7 @@ declaration:    identifiers COLON INTEGER{      //done this one
                 | identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER{
                   int cnt = 0;
                   $$.code = new string();
+                  if($5.num_val <= 0) yyerror("Cannot declare the array with negtive number!!");
                   while($1.id_num--) {*$$.code += *gen(".[]", $1.ids[cnt++], to_string($5.num_val));}  //while
 
                   if(comment_on) printf("declaration->identifiers COLON ARRAY L_SQUARE_BRACKET number R_SQUARE_BRACKET OF INTEGER\n");
