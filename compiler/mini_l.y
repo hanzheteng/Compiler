@@ -194,21 +194,25 @@ statement:      variable ASSIGN expression{    // do not consider array at first
                   if(comment_on) printf("statement->DO begin_loop statements ENDLOOP WHILE bool_expr\n");
                   }
 
-                | READ variable{  //variables
+                | READ variables{  //variables
+                  $$.code = new string();
+                  int cnt = 0;
                   if($2.type == INT)
-                    $$.code = gen(".<", $2.id);
+                    while($2.id_num--) {*$$.code += *gen(".<", $2.ids[cnt++]);}
                   else
-                    $$.code = gen(".[]<", $2.id, $2.index);
+                    *$$.code += *gen(".[]<", $2.id, $2.index);
                   *$$.code += *$2.code;
                   if(comment_on) printf("statement->READ variables\n");
                   }
 
-                | WRITE variable{
-                  if($2.type == INT)
-                    $$.code = gen(".>", $2.id);
-                  else
-                    $$.code = gen(".[]>", $2.id, $2.index);
+                | WRITE variables{
+                  $$.code = new string();
                   *$$.code += *$2.code;
+                  int cnt = 0;
+                  if($2.type == INT)
+                    while($2.id_num--) {*$$.code += *gen(".>", $2.ids[cnt++]);}
+                  else
+                    *$$.code += *gen(".[]>", $2.id, $2.index);
                   if(comment_on) printf("statement->WRITE variables\n");
                   }
 
@@ -421,10 +425,15 @@ term:           variable{    // done this one
 
 variables:      variable{   
                 $$.code = $1.code;
-                $$.id = $1.id;
+                $$.ids[0] = $1.id;
+                $$.id_num = 1;
                 if(comment_on) printf("variables->variable\n");
                 }
                 | variable COMMA variables{
+                  $$.ids[0] = $1.id;
+                  $$.id_num = 1;
+                  int cnt = 0;
+                  while($3.id_num--) {$$.ids[$$.id_num++] = $3.ids[cnt++];} //copy remaining ids
                   if(comment_on) printf("variables->variable COMMA variables\n");
                   }
                 ;
@@ -458,7 +467,6 @@ identifiers:    identifier{   //done this one
                   $$.id_num = 1;
                   int cnt = 0;
                   while($3.id_num--) {$$.ids[$$.id_num++] = $3.ids[cnt++];} //copy remaining ids
-                  
                   if(comment_on) printf("identifiers->identifier COMMA identifiers\n");
                   }
                 ;
