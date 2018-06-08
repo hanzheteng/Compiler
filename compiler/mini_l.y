@@ -15,14 +15,13 @@
   char* op_val;
   struct state{
     string *code;
-    string *id;    // identifier
+    string *id;       // identifier
     string *ids[10];  // id list, max = 10
     int id_num;
-    string *temp;    // temp variable
+    string *temp;     // temp variable
     string *label_true;
     string *label_false;
-    //uint length;
-    //symbol_type type;
+    symb_type type;
   }state;
 
 }
@@ -367,14 +366,19 @@ variables:      variable{
                 ;
 
 variable:       identifier{
+                $$.type = INT;
                 $$.id = $1.id;
-                $$.temp = new_temp();//generate temp here
+                $$.temp = new_temp();
                 $$.code = new string();
-                *$$.code += *gen(".", $$.temp) +
-                *gen("=", $$.temp, $1.id);
+                *$$.code += *gen(".", $$.temp) + *gen("=", $$.temp, $1.id);
                 if(comment_on) printf("variable->identifier\n");
                 }
                 | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET{    // array case
+                  $$.type = INT_ARRAY;
+                  $$.id = $1.id;
+                  $$.temp = new_temp();
+                  $$.code = new string();
+                  *$$.code += *gen(".[]", $$.temp);
                   if(comment_on) printf("variable->identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET\n");
                   }
                 ;
