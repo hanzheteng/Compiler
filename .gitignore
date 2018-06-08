@@ -1,5 +1,6 @@
 # Ignore all
 *
+!mil_run
 
 # Unignore all with extensions
 !*.*
